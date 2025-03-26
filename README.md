@@ -94,8 +94,8 @@ Estructura del Proyecto
 Contribuciones
 
 Colaboradores:
-	•	Gabriel Moisés Fuentes
-	•	Martín Gómez Torres
+- Gabriel Moisés Fuentes
+- Martín Gómez Torres
 
 ---
 
