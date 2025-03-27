@@ -66,13 +66,13 @@ spot.delete()
 Estructura del Proyecto
 ```
 ├── mtcc_dashboard_backend/
-|   |--local_emissions_launcher/
-|       |-- 2_emissions_local_v1.py
-|   |--transits_generator/
-|       |-- .gitkeep
-|       |-- 1_transits_pc_v1.pt
+│  ├── local_emissions_launcher/
+│      ├── 2_emissions_local_v1.py
+│   ├── transits_generator/
+│       ├── .gitkeep
+│       ├── 1_transits_pc_v1.pt
 │   ├── ais_support_func.py
-|   |-- emissions_generator.py
+│   ├── emissions_generator.py
 │   ├── panama_ports_statistictis.py
 │   ├── panama_ports_var.py
 │   ├── port_stops_recognition.py
@@ -81,12 +81,8 @@ Estructura del Proyecto
 |   |-- transits_recognition.py
 │   ├── README.md
 │
-├── public/
-│   ├── index.html
-│   ├── style.css
-│   ├── README.md
 │
-|-- README.md
+├── README.md
 └── .gitlab-ci.yml
 ```
 ---
