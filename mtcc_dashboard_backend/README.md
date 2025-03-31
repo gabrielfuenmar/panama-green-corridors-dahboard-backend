@@ -777,3 +777,99 @@ Este módulo (ubicado en la carpeta `transits_generator`) orquesta la identifica
 - Libera recursos del entorno Spot Ocean.
 
 ---
+
+## Panama Port Calls Module (`3_panama_port_calls.py`)
+
+Este módulo procesa datos AIS dentro de la Zona Económica Exclusiva (ZEE) de Panamá para identificar escalas portuarias y eventos de fondeo. Aplica filtros espaciales mediante índices H3, recupera especificaciones de buques e identifica secuencias fondeo puerto para análisis.
+
+---
+
+### 1. Carga de ZEE y Puertos de Panamá
+
+**Funcionalidad:**
+Carga polígonos de la ZEE y ubicaciones portuarias, convirtiéndolos en GeoDataFrames para análisis espacial.
+
+**Pasos internos:**
+- Lectura de `land_eez_wkt.csv` y `ports_panama.csv`.
+- Conversión a GeoDataFrames (EPSG:4326).
+- Filtrado para quedarse solo con geometría de Panamá.
+
+---
+
+### 2. Generación de Índices H3 (Costa y Puertos)
+
+**Funcionalidad:**
+Convierte geometrías de la ZEE y puertos a índices H3 para filtrar espacialmente los mensajes AIS.
+
+**Pasos internos:**
+- Polígonos de la costa a resolución H3 nivel 5.
+- Geometrías de puertos a resolución H3 nivel 10.
+- Se obtienen celdas indexadas en formato entero.
+
+---
+
+### 3. Inicialización de Sesión Spark
+
+**Funcionalidad:**
+Conecta a una sesión Spark usando la API de Spot Ocean con un token.
+
+**Parámetros:**
+- `SPOT_TOKEN` desde variables de entorno.
+
+---
+
+### 4. Acceso a Archivos en S3
+
+**Funcionalidad:**
+Conecta a S3, lista archivos AIS disponibles y determina qué fechas faltan por procesar.
+
+**Pasos internos:**
+- Detecta archivos `transits_pc_in_*`.
+- Compara con `port_stops_in_*` para excluir fechas ya procesadas.
+- Extrae rangos de fechas válidos.
+
+---
+
+### 5. Recuperación de Datos AIS
+
+**Funcionalidad:**
+Obtiene mensajes AIS para las zonas H3 seleccionadas y fechas válidas, añadiendo versiones y especificaciones de buques.
+
+**Pasos internos:**
+- Filtrado por índice H3 costero.
+- Unión con datos de puertos y versiones IHS.
+- Enriquecimiento de registros MMSI con especificaciones GHG4.
+
+---
+
+### 6. Identificación de Eventos en Puerto y Fondeo
+
+**Funcionalidad:**
+Detecta escalas en puerto (SOG ≤ 1) y eventos de fondeo (1 < SOG ≤ 3) usando lógica basada en ventanas temporales.
+
+**Pasos internos:**
+- Eventos portuarios agrupados por nombre y separación de 24h.
+- Fondeos agrupados por separación ≥ 1h.
+- Solo se conservan escalas ≥ 1 hora.
+
+---
+
+### 7. Secuencias Fondeo → Puerto
+
+**Funcionalidad:**
+Detecta secuencias donde un fondeo es seguido de una escala portuaria en menos de 1 hora.
+
+**Pasos internos:**
+- Combinación de ambos tipos de eventos.
+- Cálculo de diferencia temporal entre eventos.
+- Enlace cuando la diferencia ≤ 3600s.
+
+---
+
+### 8. Guardado de Resultados
+
+**Funcionalidad:**
+Escribe los resultados a S3 bajo la clave `port_stops`, incluyendo especificaciones del buque.
+
+**Output:**
+Archivo parquet agrupado por `imo`, `mmsi`, duración y tipo de escala.
