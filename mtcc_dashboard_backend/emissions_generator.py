@@ -63,14 +63,14 @@ def emissions_ghg_imo(df_spark_w_adapted_specs,spark):
     emissions_local=emissions_local.join(ae_ab_pwr,["StandardVesselType","imobin"],"left")
     
      # Adjust AE and AB power usage based on operational phase
-    emissions_local=emissions_local.withColumn("ae_pow",F.when(F.col("ae_pow").isNull(),
+    emissions_local=emissions_local.withColumn("ae_ene",F.when(F.col("ae_pow").isNull(),
                                                                F.when(F.col("op_phase").isin(["Slow transit","Normal cruising"]),F.col("ae_sea")*F.col("freq"))\
                                                                .otherwise(F.when(F.col("op_phase")=="Berth",F.col("ae_berth")*F.col("freq"))\
                                                                .otherwise(F.when(F.col("op_phase")=="Manoeuvring",F.col("ae_man")*F.col("freq"))\
                                                                .otherwise(F.when(F.col("op_phase")=="Anchorage",F.col("ae_anch")*F.col("freq"))\
                                                                .otherwise(F.col("ae_sea")*F.col("freq"))))))\
                                                .otherwise(F.col("ae_pow")))\
-                                    .withColumn("ab_pow",F.when(F.col("ab_pow").isNull(),
+                                    .withColumn("ab_ene",F.when(F.col("ab_pow").isNull(),
                                                                F.when(F.col("op_phase").isin(["Slow transit","Normal cruising"]),F.col("ab_sea")*F.col("freq"))\
                                                                .otherwise(F.when(F.col("op_phase")=="Berth",F.col("ab_berth")*F.col("freq"))\
                                                                .otherwise(F.when(F.col("op_phase")=="Manoeuvring",F.col("ab_man")*F.col("freq"))\
@@ -140,9 +140,9 @@ def emissions_ghg_imo(df_spark_w_adapted_specs,spark):
                                                .otherwise(F.lit(0)))))
         
     emissions_local=emissions_local.withColumn("me_con",F.col("me_ene")*F.col("sfc_me"))\
-                           .withColumn("ae_con",F.col("ae_pow")*F.col("sfc_ae"))\
-                           .withColumn("ab_con",F.col("ab_pow")*F.col("sfc_ab"))\
-                            .withColumn("pilot_con",F.col("me_pow")*F.col("pilot_mdo"))  ###Pilot MDO for LNG fuel
+                           .withColumn("ae_con",F.col("ae_ene")*F.col("sfc_ae"))\
+                           .withColumn("ab_con",F.col("ab_ene")*F.col("sfc_ab"))\
+                            .withColumn("pilot_con",F.col("me_ene")*F.col("pilot_mdo"))  ###Pilot MDO for LNG fuel
 
                                
     emissions_local=emissions_local.withColumn("pilot_con",F.when(F.col("pilot_con").isNull(),0).otherwise(F.col("pilot_con")))
@@ -173,8 +173,8 @@ def emissions_ghg_imo(df_spark_w_adapted_specs,spark):
                                                       
 
     emissions_local=emissions_local.withColumn("ch4_g",F.col("me_ene")*F.col("ef_ch4")+\
-                                               F.col("ae_pow")*F.col("ef_ch4_ae")+\
-                                               F.col("ab_pow")*F.col("ef_ch4_ab"))
+                                               F.col("ae_ene")*F.col("ef_ch4_ae")+\
+                                               F.col("ab_ene")*F.col("ef_ch4_ab"))
         
     ef_n2o=spark.createDataFrame(ef.find_folder_csv("ghg4_tables","table_59_60.csv"))
     ef_n2o_ae=ef_n2o.filter(F.col("meType")=="AE").drop("meType").withColumnRenamed("ef_n2o","ef_n2o_ae")
@@ -191,8 +191,8 @@ def emissions_ghg_imo(df_spark_w_adapted_specs,spark):
                                                       
 
     emissions_local=emissions_local.withColumn("n2o_g",F.col("me_ene")*F.col("ef_n2o")+\
-                                               F.col("ae_pow")*F.col("ef_n2o_ae")+\
-                                               F.col("ab_pow")*F.col("ef_n2o_ab"))
+                                               F.col("ae_ene")*F.col("ef_n2o_ae")+\
+                                               F.col("ab_ene")*F.col("ef_n2o_ab"))
     # Convert emissions from grams to tonnes
     emissions_local=emissions_local.withColumn("n2o_t",F.col("n2o_g")*F.lit(1e-6))\
                             .withColumn("co2_t",F.col("co2_g")*F.lit(1e-6))\
